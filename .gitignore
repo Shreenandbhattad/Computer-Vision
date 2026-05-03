@@ -1,0 +1,15 @@
+# model weights - too large for github
+checkpoints/
+*.pt
+*.pth
+
+# dataset - too large
+dataset/
+nerf_data/
+
+# outputs
+nerf_output/
+predictions.csv
+__pycache__/
+*.pyc
+.DS_Store
