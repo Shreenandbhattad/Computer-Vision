@@ -16,19 +16,14 @@ SAM_CKPT    = PROJECT_DIR / "checkpoints" / "sam_vit_h_4b8939-002.pth"
 SAM_MODEL   = "vit_h"   # vit_b is faster but less accurate
 
 # detection thresholds
-CONF_THRESH   = 0.55   # min confidence to keep a detection
+CONF_THRESH   = 0.75   # min confidence to keep a detection
 IOU_THRESH    = 0.25   # nms overlap threshold
 MIN_AREA_FRAC = 0.010  # each bowl should be at least ~1% of plate area
-MAX_AREA_FRAC = 0.18   # ignore huge masks (like the whole plate)
-
-# classes to skip - not food items
-EXCLUDE_LABELS = {"thali", "plate"}
-
+MAX_AREA_FRAC = 0.12  
+EXCLUDE_LABELS = {"thali", "plate"} # classes to skip  not food items
 MIN_ASPECT = 0.20   # min width/height ratio
 MAX_ASPECT = 5.0    # max width/height ratio
 CROP_PAD   = 10     # padding around each mask bbox before classifying
-
-# sam settings - denser grid catches individual bowls better
 SAM_PTS_PER_SIDE   = 48
 SAM_IOU_THRESH     = 0.88
 SAM_STAB_THRESH    = 0.95   # higher = cleaner bowl boundaries
@@ -91,9 +86,8 @@ def load_sam(sam_ckpt: Path, model_type: str):
     return mg
 
 
-# bev warp - click 4 corners of the plate
 def bev_interactive(img_bgr: np.ndarray) -> np.ndarray:
-    print("\n[BEV] Click 4 plate corners: TL -> TR -> BR -> BL")
+    print("\n[BEV]  4 plate corners: TL -> TR -> BR -> BL")
     print("      ENTER to warp | ESC to skip\n")
 
     pts   = []
@@ -131,7 +125,7 @@ def bev_interactive(img_bgr: np.ndarray) -> np.ndarray:
     return warp
 
 
-# bev auto - hough circle to find plate then warp
+#  bev auto  hough circle to find plate then warp
 def bev_auto(img_bgr: np.ndarray) -> np.ndarray:
     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (9, 9), 2)
@@ -301,9 +295,7 @@ def detect(img_path, model, classes, mask_gen, bev_mode="none", out_path=None):
     print(f"saved -> {out_path}")
 
     # summary
-    print("\n{'─'*55}")
     print(f"  {'#':>3}  {'Label':30s}  {'Conf':>5}  Box")
-    print(f"{'─'*55}")
     for i, d in enumerate(detections, 1):
         x1,y1,x2,y2 = d["box"]
         print(f"  {i:3d}  {d['label']:30s}  {d['conf']:.3f}  [{x1},{y1},{x2},{y2}]")

@@ -87,10 +87,9 @@ with torch.no_grad():
         print("  top5:", top5_text)
         print()
 
-# save results
 with open(OUT_CSV, "w", newline="") as f:
     writer = csv.writer(f)
     writer.writerow(["filename", "prediction", "confidence", "top5"])
     writer.writerows(rows)
 
-print("saved to", OUT_CSV)
+print("saved", OUT_CSV)

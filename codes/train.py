@@ -22,37 +22,35 @@ PROJECT_DIR = Path("E:/Computer Vision")
 ROOT        = PROJECT_DIR / "dataset" / "khana"
 SAVE_PATH   = PROJECT_DIR / "checkpoints" / "khana_best.pt"
 
-# model - pretrained on imagenet21k then finetuned on in1k, much better than in1k only
+# model
 ARCH           = "convnext_base.fb_in22k_ft_in1k"
 DROP_PATH_RATE = 0.2   # stochastic depth for regularization
 
 # training
-BATCH_SIZE   = 32       # can try 64 if enough vram
+BATCH_SIZE   = 32      
 NUM_WORKERS  = 4
-WEIGHT_DECAY = 0.05     # convnext needs higher weight decay than usual
+WEIGHT_DECAY = 0.05    
 GRAD_CLIP    = 1.0
 LABEL_SMOOTH = 0.1
-
-# stage 1 - larger lr, 224px, most of the training happens here
 EPOCHS_S1  = 20
 IMG_S1     = 224
 LR_S1      = 3e-4
 LR_MIN_S1  = 1e-6
-WARMUP_S1  = 5    # warmup epochs before cosine decay starts
+WARMUP_S1  = 5   
 
-# stage 2 - smaller lr, 320px finetune
+# stage 2 
 EPOCHS_S2  = 8
 IMG_S2     = 320
-LR_S2      = 5e-5   # very small since just finetuning at higher res
+LR_S2      = 5e-5  
 LR_MIN_S2  = 1e-7
 WARMUP_S2  = 1
 
-# mixup / cutmix params
+# mixup 
 MIXUP_ALPHA   = 0.4
 CUTMIX_ALPHA  = 1.0
 MIXUP_PROB    = 1.0
 CUTMIX_MINMAX = None
-SWITCH_PROB   = 0.5   # 50% chance of switching between cutmix and mixup
+SWITCH_PROB   = 0.5   
 
 random.seed(SEED)
 np.random.seed(SEED)
@@ -103,7 +101,6 @@ IMAGENET_STD  = [0.229, 0.224, 0.225]
 
 
 def make_train_tf(img_size):
-    # randaugment + random erasing, stronger than manual augmentations
     return create_transform(
         input_size        = img_size,
         is_training       = True,
@@ -153,7 +150,6 @@ class KhanaDataset(Dataset):
         raise RuntimeError("couldn't load image at index " + str(idx))
 
 
-# mixup + cutmix setup - produces soft targets so normal CE won't work
 mixup_fn = Mixup(
     mixup_alpha    = MIXUP_ALPHA,
     cutmix_alpha   = CUTMIX_ALPHA,
@@ -167,7 +163,6 @@ mixup_fn = Mixup(
 
 
 class SoftTargetCrossEntropy(nn.Module):
-    # regular CE doesn't work with soft labels from mixup
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         log_probs = torch.log_softmax(logits, dim=-1)
         return -(targets * log_probs).sum(dim=-1).mean()
@@ -184,16 +179,13 @@ def build_model(num_classes: int) -> nn.Module:
     return model
 
 
-# layer-wise lr decay - backbone gets lower lr, head gets full lr
 def build_param_groups(model: nn.Module, base_lr: float, decay: float = 0.75):
     param_groups = []
-    # head gets base lr
     param_groups.append({
         "params": list(model.head.parameters()),
         "lr": base_lr,
         "name": "head",
     })
-    # each earlier stage gets multiplied by decay
     stages = [model.stages[i] for i in range(len(model.stages) - 1, -1, -1)]
     for i, stage in enumerate(stages):
         param_groups.append({
@@ -224,7 +216,6 @@ def evaluate(model, loader, tta=False):
         y = y.to(device, non_blocking=True)
 
         if tta:
-            # 5-crop: 4 corners + center, average the logits
             bs, c, h, w = x.shape
             crop_h = crop_w = int(h * 0.875)
             crops = [
@@ -266,7 +257,6 @@ def run_stage(
     train_ds = KhanaDataset(train_paths, train_labels, transform=make_train_tf(img_size))
     val_ds   = KhanaDataset(val_paths,   val_labels,   transform=make_val_tf(img_size))
 
-    # weighted sampler so each class is seen equally
     train_class_counts = Counter(train_labels)
     sample_weights = [1.0 / train_class_counts[y] for y in train_labels]
     sampler = WeightedRandomSampler(sample_weights, len(sample_weights), replacement=True)
@@ -295,7 +285,7 @@ def run_stage(
         warmup_lr_init = 1e-7,
         warmup_prefix  = True,
         cycle_limit    = 1,
-        t_in_epochs    = False,   # step-level updates not epoch-level
+        t_in_epochs    = False,  
     )
 
     criterion = SoftTargetCrossEntropy()
@@ -362,7 +352,6 @@ if __name__ == "__main__":
     total_params = sum(p.numel() for p in model.parameters()) / 1e6
     print(f"params: {total_params:.1f}M")
 
-    # stage 1 - 224px
     best = run_stage(
         model, train_paths, train_labels, val_paths, val_labels,
         img_size     = IMG_S1,
@@ -374,8 +363,7 @@ if __name__ == "__main__":
         stage_name   = "S1",
     )
 
-    # stage 2 - load best weights then finetune at 320px
-    print("\nloading best s1 weights...")
+    print("\nbest s1 weights.")
     ckpt = torch.load(SAVE_PATH, map_location=device)
     model.load_state_dict(ckpt["model_state"])
 
@@ -391,7 +379,7 @@ if __name__ == "__main__":
     )
 
     # tta eval on best checkpoint
-    print("\nrunning tta on best checkpoint...")
+    print("\n tta on best checkpoint")
     ckpt = torch.load(SAVE_PATH, map_location=device)
     model.load_state_dict(ckpt["model_state"])
 

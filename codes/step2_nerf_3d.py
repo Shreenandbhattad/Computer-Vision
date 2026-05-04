@@ -14,13 +14,13 @@ PROJECT_DIR = Path("E:/Computer Vision")
 OUT_DIR    = PROJECT_DIR / "nerf_output" / "3d"
 N_ITERS    = 30_000
 LR         = 5e-4
-BATCH_RAYS = 1024    # rays per iter, lower if oom
-N_COARSE   = 64      # coarse samples per ray
-N_FINE     = 128     # fine samples (importance sampling on top of coarse)
-L_POS      = 10      # positional encoding levels for xyz
-L_DIR      = 4       # positional encoding levels for view direction
+BATCH_RAYS = 1024    
+N_COARSE   = 64      
+N_FINE     = 128    
+L_POS      = 10     
+L_DIR      = 4
 HIDDEN     = 256
-N_LAYERS   = 8       # mlp depth, skip connection injected at layer 4
+N_LAYERS   = 8       
 LOG_EVERY  = 1000
 NEAR       = 0.02    # near plane in metres
 FAR        = 1.0     # far plane in metres
@@ -97,7 +97,7 @@ def get_rays(H, W, focal, c2w):
         torch.arange(H, dtype=torch.float32, device=device),
         indexing="xy"
     )
-    # camera space dirs (opengl convention: -z forward, y up)
+
     dirs = torch.stack([
         (i - W * 0.5) / focal,
         -(j - H * 0.5) / focal,
@@ -275,7 +275,7 @@ if __name__ == "__main__":
             print(f"  step {step:6d} | loss {loss.item():.5f} | psnr {p:.2f} dB | {elapsed:.0f}s")
 
     # render val image
-    print("\nrendering val image...")
+    print("\nrendering val image")
     nerf_c.eval(); nerf_f.eval()
     with torch.no_grad():
         ro, rd = get_rays(H, W, focal, c2ws_val[0].to(device))
@@ -289,10 +289,9 @@ if __name__ == "__main__":
     axes[1].imshow(rendered); axes[1].set_title("NeRF Render");  axes[1].axis("off")
     fig.tight_layout(); fig.savefig(OUT_DIR / "val_render.png", dpi=150)
     iio.imwrite(OUT_DIR / "val_render.png", rendered)
-    print(f"saved -> {OUT_DIR / 'val_render.png'}")
+    print(f"saved {OUT_DIR / 'val_render.png'}")
 
-    # 60-frame spiral video
-    print("rendering spiral video...")
+    print("rendering spiral video")
     frames = []
     c2w_0  = c2ws_val[0].numpy()
     for fi in tqdm(range(60)):
@@ -309,7 +308,7 @@ if __name__ == "__main__":
         frames.append((rgb_i.cpu().numpy().reshape(H, W, 3) * 255).clip(0,255).astype(np.uint8))
 
     iio.imwrite(OUT_DIR / "spiral.gif", frames, duration=1/24, loop=0)
-    print(f"saved -> {OUT_DIR / 'spiral.gif'}")
+    print(f"saved {OUT_DIR / 'spiral.gif'}")
 
     steps_log, psnrs = zip(*psnr_log)
     plt.figure(figsize=(8, 4))
@@ -320,4 +319,4 @@ if __name__ == "__main__":
 
     torch.save({"nerf_c": nerf_c.state_dict(), "nerf_f": nerf_f.state_dict()},
                OUT_DIR / "nerf_weights.pt")
-    print(f"saved weights -> {OUT_DIR / 'nerf_weights.pt'}")
+    print(f"saved weights {OUT_DIR / 'nerf_weights.pt'}")
