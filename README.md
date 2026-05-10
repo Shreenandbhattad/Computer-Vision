@@ -25,7 +25,7 @@ The four tasks span the core pillars of modern computer vision: **image classifi
 
 ---
 
-## Problem 1 — Image Classification
+## Problem 1  Image Classification
 
 ### Task
 Train a classifier on the Khana dataset to exceed the baseline validation accuracy of **~91%** on an 80/20 train-validation split across 80 food classes.
@@ -33,7 +33,7 @@ Train a classifier on the Khana dataset to exceed the baseline validation accura
 ### Architecture
 We use **ConvNeXt-Base** (`convnext_base.fb_in22k_ft_in1k`) pretrained on ImageNet-21K and fine-tuned on ImageNet-1K via the `timm` library. ConvNeXt modernises the standard ResNet design by adopting transformer-inspired architectural choices (depthwise convolutions, inverted bottlenecks, GELU activations, LayerNorm) while retaining the inductive biases of CNNs.
 
-### Training Strategy — Two-Stage Progressive Resolution
+### Training Strategy  Two-Stage Progressive Resolution
 
 **Stage 1 (224px, 20 epochs)**
 - Optimizer: AdamW, base LR = 3×10⁻⁴, weight decay = 0.05
@@ -74,7 +74,7 @@ We use **ConvNeXt-Base** (`convnext_base.fb_in22k_ft_in1k`) pretrained on ImageN
 
 ---
 
-## Problem 2 — Thali Food Detection
+## Problem 2  Thali Food Detection
 
 ### Task
 Given a clean bird's-eye-view thali image, detect individual food portions and label them with the correct Khana class names — replacing the generic COCO labels (bowl, dining table) produced by off-the-shelf detectors. Evaluated by **Precision/Recall** on labels only (bounding box IoU not evaluated).
@@ -134,7 +134,7 @@ Custom two-pass NMS: first per-class (removes duplicates of the same food), then
 
 ---
 
-## Problem 3 — Bird's Eye View Transform
+## Problem 3  Bird's Eye View Transform
 
 ### Task
 Natural thali photos are taken from oblique angles, causing perspective distortion that degrades SAM segmentation quality. Transform natural images to a top-down Bird's Eye View (BEV) before running the detection pipeline.
@@ -178,14 +178,14 @@ After BEV warping, SAM detects significantly more masks (83 vs 37 on the same im
 
 ---
 
-## Bonus — Neural Radiance Field
+## Bonus  Neural Radiance Field
 
 ### Task
 Reconstruct a Neural Radiance Field (NeRF) of a physical thali following the CS180 Project 4 pipeline. This requires camera calibration, multi-view pose estimation, a 2D neural field warmup, and full 3D NeRF training.
 
 ---
 
-### Step 0a — Camera Calibration
+### Step 0a  Camera Calibration
 
 **Method**: Multi-view ArUco marker calibration using a printed 2×3 grid (IDs 0–5, DICT_4X4_50).
 
@@ -217,7 +217,7 @@ corners = [cx±s, cy±s, 0]   where s = 0.030
 
 ---
 
-### Step 0b — Camera Pose Estimation
+### Step 0b  Camera Pose Estimation
 
 For each thali image, `cv2.solvePnP` (IPPE_SQUARE method) estimates the camera extrinsics relative to the ArUco marker using the calibrated **K** matrix.
 
@@ -238,7 +238,7 @@ c2w[:3, 2] *= -1   # flip Z
 
 ---
 
-### Step 1 — 2D Neural Field
+### Step 1  2D Neural Field
 
 A 2D MLP is trained to map pixel coordinates (u, v) ∈ [0,1]² to RGB colour. This validates the positional encoding and training setup before full 3D training.
 
@@ -251,7 +251,7 @@ A 2D MLP is trained to map pixel coordinates (u, v) ∈ [0,1]² to RGB colour. T
 
 ---
 
-### Step 2 — 3D NeRF
+### Step 2  3D NeRF
 
 Full volumetric scene representation following Mildenhall et al. (2020).
 
@@ -277,18 +277,18 @@ Tᵢ = exp(-Σⱼ<ᵢ σⱼδⱼ)
 
 **Key improvements over vanilla NeRF**:
 
-1. **Scene normalisation** — all camera positions centred and scaled to unit sphere. NEAR/FAR computed adaptively from pose distribution (NEAR=0.01, FAR=2.41). This fixed the 4.5dB → 22dB improvement.
+1. **Scene normalisation**  all camera positions centred and scaled to unit sphere. NEAR/FAR computed adaptively from pose distribution (NEAR=0.01, FAR=2.41). This fixed the 4.5dB → 22dB improvement.
 
-2. **White background blending** — unoccupied rays rendered as white (matching table background):
+2. **White background blending**  unoccupied rays rendered as white (matching table background):
    ```
    C_final = C_nerf + (1 - Σ weights)
    ```
 
 3. **Mixed precision training** (AMP) — `torch.amp.autocast('cuda')` + `GradScaler` for ~30% speedup on T4
 
-4. **Gradient clipping** — `clip_grad_norm_(params, 1.0)` for training stability
+4. **Gradient clipping**  `clip_grad_norm_(params, 1.0)` for training stability
 
-5. **Cosine LR decay** — LR 5×10⁻⁴ → 5×10⁻⁶ over 20k steps
+5. **Cosine LR decay**  LR 5×10⁻⁴ → 5×10⁻⁶ over 20k steps
 
 **Training**: 20,000 iterations, batch 4096 rays, ~2 hours on NVIDIA T4 (Google Colab)
 
@@ -354,7 +354,7 @@ Too large for GitHub — download and place in `checkpoints/`:
 pip install torch torchvision timm segment-anything opencv-python pillow matplotlib imageio
 ```
 
-### Problem 1 — Classification
+### Problem 1  Classification
 ```bash
 # train
 python codes/train.py
@@ -363,12 +363,12 @@ python codes/train.py
 python codes/predict_khana.py
 ```
 
-### Problem 2 — Detection (clean BEV images)
+### Problem 2  Detection (clean BEV images)
 ```bash
 python codes/detect_thali.py path/to/thali.jpg --bev none
 ```
 
-### Problem 3 — BEV + Detection (natural images)
+### Problem 3  BEV + Detection (natural images)
 ```bash
 # interactive: click 4 tray corners in popup window, press Enter
 python codes/detect_thali.py path/to/thali.jpg --bev interactive
@@ -377,7 +377,7 @@ python codes/detect_thali.py path/to/thali.jpg --bev interactive
 python codes/detect_thali.py path/to/thali.jpg --bev auto
 ```
 
-### Bonus — NeRF
+### Bonus  NeRF
 ```bash
 # calibrate camera (need 30+ aruco grid photos)
 python codes/step0_calibrate.py
